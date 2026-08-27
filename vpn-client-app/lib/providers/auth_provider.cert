@@ -1,0 +1,55 @@
+// lib/providers/auth_provider.dart
+import 'package:flutter/foundation.dart';
+import '../models/user.dart';
+import '../services/auth_service.dart';
+
+class AuthProvider extends ChangeNotifier {
+  final AuthService _authService;
+  User? _user;
+  bool _isLoading = false;
+  String? _error;
+
+  AuthProvider(this._authService);
+
+  User? get user => _user;
+  bool get isLoading => _isLoading;
+  String? get error => _error;
+  bool get isLoggedIn => _user != null;
+
+  Future<bool> login(String username, String password) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final success = await _authService.login(username, password);
+      if (success) {
+        _user = await _authService.getCurrentUser();
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _error = 'Invalid username or password';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _error = 'Connection error. Please try again.';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<void> checkAuth() async {
+    _user = await _authService.getCurrentUser();
+    notifyListeners();
+  }
+
+  Future<void> logout() async {
+    await _authService.logout();
+    _user = null;
+    notifyListeners();
+  }
+}
